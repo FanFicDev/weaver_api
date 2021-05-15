@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang=en>
+	<head>
+		<meta charset="utf-8">
+		<title>weaver.fanfic.dev</title>
+		<style type="text/css">
+			body { max-width: 960px; }
+			body { font-size: 1.2em; }
+			body h2 { font-size: 1.5em; }
+			.u { font-weight: bold; }
+			.c { font-family: monospace; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>weaver.fanfic.dev</h1>
+			<p>
+				Depending on which domain the service is accessed through, there may
+				or may not be a <span class=c>/weaver</span> prefix to these endpoints.
+			</p>
+			<p>
+				<span class=c>/weaver/v0/remote</span>: Returns the client's remote
+				address as seen by weaver. This is not json encoded -- it is a raw
+				string. Ex:
+			</p>
+			<p class=c>127.0.0.1</p>
+			<p>
+				<span class=c>/weaver/v0/status</span>: Returns the status of the
+				service, as well as the client's current burst request limit. If
+				everything is well <span class=c>err</span> should be
+				<span class=c>0</span> and <span class=c>status</span> should be
+				<span class=c>"ok"</span>. Ex:
+			</p>
+			<p class=c>
+				{"burst":4,"err":0,"pid":101844,"status":"ok","tident":140189852665600}
+			</p>
+			<p>
+				<span class=c>/weaver/v0/ffn/crawl?q={url}[&amp;apiKey={key}]</span>:
+				Crawl an ffn specific url. Url has <span class=c>http://</span>
+				rewritten to <span class=c>https://</span>, and the bare domain is
+				rewritten to <span class=c>www.</span>. It is an error to pass a url
+				that does not start with
+				<span class=c>https://(m|www).(ffn's domain)</span>. If a
+				valid <span class=c>apiKey</span> argument is not passed, then a
+				aggressively rate limited anonymous one is used. If an
+				<span class=c>apiKey</span> <em>is</em> passed, it should be passed in
+				the request body.
+			</p>
+			<p>
+				In general, if a response has a negative <span class=c>err</span> code
+				in a json body then there was an error issued by the api codebase. If
+				there is a positive <span class=c>err</span> code in a json body, then
+				the error was issued by the application framework or web server and
+				the numeric value will match the http status code.
+			<p>
+				<span class=c>status 200</span>: body is simply proxied body. A few
+				informative headers starting with <span class=c>X-Weaver-</span> are
+				included to identify the cached request and actually queried url.
+				Upstream response headers are not included.</p>
+			<p>
+				<span class=c>status 400</span>: bad query, either missing the
+				<span class=c>q</span> query param or it is not a supported url. A json
+				response body will be included, ex:
+			</p>
+			<p class=c>{"err":-1,"msg":"missing q param"}</p>
+			<p class=c>{"arg":"foo","err":-2,"msg":"url is not ffn"}</p>
+			<p>
+				<span class=c>status 401</span>: unauthorized, ensure any required
+				basic auth parameters are being passed. Ex:
+			</p>
+			<p class=c>{"err":401,"msg":"Unauthorized","nginx":true}</p>
+			<p>
+				<span class=c>status 404</span>: file not found, ensure the url is a
+				valid api endpoint. Ex:
+			</p>
+			<p class=c>{"err":-404,"msg":"not found"}</p>
+			<p>
+				<span class=c>status 429</span>: too many requests; a
+				<span class=c>Retry-After</span> header will be included with minimum
+				integer number of seconds before the client should make another
+				request. A json response body with the same field will be included,
+				ex:
+			</p>
+			<p class=c>{"err":-429,"msg":"too many requests","retryAfter":5}</p>
+			<p>
+				<span class=c>status 500</span>: internal server error. Either weaver
+				is misconfigured, or there's an outage somewhere in the pipeline
+				(possibly all FR instances are busy or down).
+			</p>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,9 @@
+weaver_api is a thin interface over skitter_api providing rate limiting and
+other restrictions.
+
+Ensure you create a valid etc/nginx/auth/weaver.htpasswd file.
+
+/etc/hosts on the deploy target should contain an entry for polaris.fanfic.dev
+
+Copy priv.ex.py to priv.py and actually fill it with valid credentials.
+
