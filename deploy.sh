@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 set -e
 
-if [[ ! -f secrets.py ]]; then
-	echo "err: secrets.py does not exist"
+if [[ ! -f priv.py ]]; then
+	echo "err: priv.py does not exist"
 	exit 1
 fi
 
