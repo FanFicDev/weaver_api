@@ -17,7 +17,7 @@ from oil import oil
 app = Flask(__name__, static_url_path='')
 defaultRequestTimeout = 60
 defaultUserAgent = 'weaver_api'
-skitterBaseUrl = 'https://athena.fanfic.dev/skitter/'
+skitterBaseUrl = 'https://atlas.fanfic.dev/skitter/'
 
 import priv
 skitterApiKey = priv.skitterApiKey
