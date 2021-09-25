@@ -6,10 +6,13 @@ if [[ ! -f priv.py ]]; then
 	exit 1
 fi
 
+target="${1-weaver}"
+echo "pushing to host: $target"
+
 mypy weaver_api.py
 
-rsync -aPv ../weaver_api ../python-oil weaver:
-rsync -aPv --no-owner --no-group ./etc/ root@weaver:/etc/
+rsync -aPv ../weaver_api ../python-oil weaver@${target}:
+rsync -aPv --no-owner --no-group ./etc/ root@${target}:/etc/
 
-ssh weaver './weaver_api/setup_weaver_env.sh'
+ssh weaver@${target} './weaver_api/setup_weaver_env.sh'
 
