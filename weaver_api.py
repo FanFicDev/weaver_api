@@ -22,6 +22,7 @@ app = Flask(__name__, static_url_path='')
 defaultRequestTimeout = 60
 defaultUserAgent = 'weaver_api'
 skitterBaseUrl = 'https://atlas.fanfic.dev/skitter/'
+TRUSTED_UPSTREAMS={'157.90.146.42'}
 
 import priv
 skitterApiKey = priv.skitterApiKey
@@ -169,10 +170,16 @@ def get_limiter(db: 'psycopg2.connection', remoteAddr: str,
 		return limiter
 	return WeaverLimiter.create(db, apiKey)
 
+def get_remote_addr() -> str:
+	remote_addr = request.remote_addr
+	if remote_addr is not None and remote_addr in TRUSTED_UPSTREAMS:
+		remote_addr = request.headers.get('X-Forwarded-For', remote_addr)
+	return remote_addr or 'unknown'
+
 @app.route('/v0', methods=['GET'], strict_slashes=False)
 @app.route('/v0/status', methods=['GET'])
 def v0_status() -> FlaskResponse:
-	remoteAddr = request.remote_addr or 'unknown'
+	remoteAddr = get_remote_addr()
 	apiKey = request.values.get('apiKey', None)
 
 	with oil.open() as db:
@@ -189,11 +196,11 @@ def v0_status() -> FlaskResponse:
 
 @app.route('/v0/remote', methods=['GET'])
 def v0_remote() -> FlaskResponse:
-	return request.remote_addr
+	return get_remote_addr()
 
 @app.route('/v0/ffn/crawl', methods=['GET'])
 def v0_ffn_crawl() -> FlaskResponse:
-	remoteAddr = request.remote_addr or 'unknown'
+	remoteAddr = get_remote_addr()
 	apiKey = request.values.get('apiKey', None)
 
 	q = request.values.get('q', None)
