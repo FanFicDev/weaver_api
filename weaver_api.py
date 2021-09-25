@@ -1,4 +1,7 @@
-from typing import Any, Dict, Union, Tuple, Optional, cast
+from typing import (
+		Any, Dict, Union, Tuple, Optional, Generator, List,
+		Callable, Iterable
+	)
 import os
 import threading
 import traceback
@@ -8,6 +11,7 @@ from enum import IntEnum
 from flask import Flask, Response, request, render_template, \
 	make_response
 import werkzeug.wrappers
+from werkzeug.datastructures import Headers
 from werkzeug.exceptions import HTTPException, NotFound
 import psycopg2
 import requests
@@ -23,8 +27,28 @@ import priv
 skitterApiKey = priv.skitterApiKey
 skitterUser = priv.skitterUser
 
-BasicFlaskResponse = Union[Response, werkzeug.wrappers.Response, str, Dict[str, Any]]
-FlaskResponse = Union[BasicFlaskResponse, Tuple[BasicFlaskResponse, int]]
+FlaskHeaderValue = Union[str, List[str], Tuple[str, ...]]
+FlaskHeaders = Union[
+		Headers,
+		Dict[str, FlaskHeaderValue],
+		List[Tuple[str, FlaskHeaderValue]]
+	]
+BasicFlaskResponse = Union[
+		Response,
+		Any,
+		Dict[str, Any],
+		Generator[Any, None, None]
+	]
+FlaskResponse = Union[
+		BasicFlaskResponse,
+		Tuple[
+			BasicFlaskResponse,
+			FlaskHeaders
+		],
+		Tuple[BasicFlaskResponse, int],
+		Tuple[BasicFlaskResponse, int, FlaskHeaders],
+		Callable[[Dict[str, Any], BasicFlaskResponse], Iterable[bytes]]
+	]
 
 CACHE_BUSTER=1
 
@@ -124,13 +148,13 @@ def getErr(err: WebError, extra: Optional[Dict[str, Any]] = None
 	return base
 
 @app.errorhandler(404)
-def page_not_found(e: HTTPException) -> FlaskResponse:
+def page_not_found(e: Exception) -> FlaskResponse:
 	# FIXME should we limit here too?
 	return make_response({'err':-404,'msg':'not found'}, 404)
 
 @app.route('/')
 def index() -> FlaskResponse:
-	return render_template('index.html', CACHE_BUSTER=CACHE_BUSTER)
+	return make_response(render_template('index.html', CACHE_BUSTER=CACHE_BUSTER))
 
 def get_limiter(db: 'psycopg2.connection', remoteAddr: str,
 		apiKey: Optional[str]) -> WeaverLimiter:
@@ -148,7 +172,7 @@ def get_limiter(db: 'psycopg2.connection', remoteAddr: str,
 @app.route('/v0', methods=['GET'], strict_slashes=False)
 @app.route('/v0/status', methods=['GET'])
 def v0_status() -> FlaskResponse:
-	remoteAddr = request.remote_addr
+	remoteAddr = request.remote_addr or 'unknown'
 	apiKey = request.values.get('apiKey', None)
 
 	with oil.open() as db:
@@ -169,7 +193,7 @@ def v0_remote() -> FlaskResponse:
 
 @app.route('/v0/ffn/crawl', methods=['GET'])
 def v0_ffn_crawl() -> FlaskResponse:
-	remoteAddr = request.remote_addr
+	remoteAddr = request.remote_addr or 'unknown'
 	apiKey = request.values.get('apiKey', None)
 
 	q = request.values.get('q', None)
