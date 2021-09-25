@@ -160,7 +160,8 @@ def v0_status() -> FlaskResponse:
 		limiter = limiter.refresh(db)
 		return make_response({'err':0,'status':'ok',
 				'pid':os.getpid(),'tident':threading.get_ident(),
-				'burst':int(math.floor(limiter.burst()))})
+				'burst':int(math.floor(limiter.burst())),
+				'flow':limiter.flow,'anon':limiter.isAnon()})
 
 @app.route('/v0/remote', methods=['GET'])
 def v0_remote() -> FlaskResponse:
