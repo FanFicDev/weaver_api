@@ -362,6 +362,22 @@ def v0_cache() -> ResponseReturnValue:
 		return res
 	return make_response({'err':-404,'msg':'not found'}, 404)
 
+@app.route('/v0/softCrawl', methods=['GET'])
+def v0_soft_crawl() -> ResponseReturnValue:
+	remoteAddr = get_remote_addr()
+	apiKey = get_request_value('apiKey', None)
+
+	db = oil.open()
+	limiter = get_limiter(db, remoteAddr, apiKey)
+	retryAfterResponse = limiter.retryAfterResponse(db, .1)
+	if retryAfterResponse is not None:
+		return retryAfterResponse
+
+	res = v0_cache_internal()
+	if res is not None:
+		return res
+	return v0_crawl()
+
 if __name__ == '__main__':
 	app.run(debug=True)
 
