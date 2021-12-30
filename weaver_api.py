@@ -54,7 +54,7 @@ class WeaverLimiter:
 
 	@staticmethod
 	def select(db: 'psycopg2.connection', key: str) -> Optional['WeaverLimiter']:
-		with db, db.cursor() as curs:
+		with db.cursor() as curs:
 			curs.execute('''
 				select id, key, capacity, flow, value, lastDrain
 				from weaver_limiter wl
@@ -64,7 +64,7 @@ class WeaverLimiter:
 
 	@staticmethod
 	def create(db: 'psycopg2.connection', key: str) -> 'WeaverLimiter':
-		with db, db.cursor() as curs:
+		with db.cursor() as curs:
 			curs.execute('''
 				insert into weaver_limiter(key, capacity, flow, value, lastDrain)
 				values(%s, %s, %s, %s, now())''', (key, 5, 1.0/20, 0))
@@ -79,7 +79,7 @@ class WeaverLimiter:
 
 	def retryAfter(self, db: 'psycopg2.connection', value: float
 			) -> Optional[float]:
-		with db, db.cursor() as curs:
+		with db.cursor() as curs:
 			curs.execute('select weaver_fill_limiter(%s, %s)', (self.key, value))
 			r = curs.fetchone()
 			if r is None:
@@ -106,7 +106,7 @@ class WeaverLimiter:
 class WeaverRequestLog:
 	@staticmethod
 	def log(db: 'psycopg2.connection', lid: int, url: Optional[str]) -> None:
-		with db, db.cursor() as curs:
+		with db.cursor() as curs:
 			curs.execute('''
 				insert into weaver_request_log(lid, url, created)
 				values(%s, %s, now())''', (lid, url))
