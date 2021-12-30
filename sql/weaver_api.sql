@@ -59,3 +59,6 @@ create table if not exists weaver_request_log (
 	created timestamp
 );
 
+create index if not exists
+	idx_weaver_request_log_created on weaver_request_log(created);
+
