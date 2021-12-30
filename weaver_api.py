@@ -154,11 +154,19 @@ def get_remote_addr() -> str:
 		remote_addr = request.headers.get('X-Forwarded-For', remote_addr)
 	return remote_addr or 'unknown'
 
+def get_request_value(key: str, dflt: Optional[str]) -> Optional[str]:
+	val = request.form.get(key, None)
+	if val is None:
+		val = request.args.get(key, None)
+	if val is None:
+		val = dflt
+	return val
+
 @app.route('/v0', methods=['GET'], strict_slashes=False)
 @app.route('/v0/status', methods=['GET'])
 def v0_status() -> ResponseReturnValue:
 	remoteAddr = get_remote_addr()
-	apiKey = request.values.get('apiKey', None)
+	apiKey = get_request_value('apiKey', None)
 
 	with oil.open() as db:
 		limiter = get_limiter(db, remoteAddr, apiKey)
@@ -179,9 +187,9 @@ def v0_remote() -> ResponseReturnValue:
 @app.route('/v0/ffn/crawl', methods=['GET'])
 def v0_ffn_crawl() -> ResponseReturnValue:
 	remoteAddr = get_remote_addr()
-	apiKey = request.values.get('apiKey', None)
+	apiKey = get_request_value('apiKey', None)
 
-	q = request.values.get('q', None)
+	q = get_request_value('q', None)
 	if q is not None and len(q) > 4096:
 		q = q[:4096]
 	print(f'v0_ffn_crawl: {q=}')
