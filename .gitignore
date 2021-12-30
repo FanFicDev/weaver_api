@@ -1,2 +1,6 @@
 etc/nginx/auth/weaver.htpasswd
 priv.py
+venv/
+logs/
+__pycache__/
+weaver_api_master.pid

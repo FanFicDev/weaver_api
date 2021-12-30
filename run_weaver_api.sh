@@ -3,7 +3,7 @@
 export OIL_DB_DBNAME=weaver
 mkdir -p ./logs/
 
-exec uwsgi --plugin python3 --enable-threads \
+exec uwsgi --plugin python3 --enable-threads --virtualenv venv \
 	--reuse-port --uwsgi-socket 127.0.0.1:9161 \
 	--plugin logfile  \
 	--logger file:logfile=./logs/weaver_api.log,maxsize=2000000 \

@@ -7,3 +7,8 @@ Ensure you create a valid etc/nginx/auth/weaver.htpasswd file.
 
 Copy priv.ex.py to priv.py and actually fill it with valid credentials.
 
+Setup the virtualenv to manage dependencies:
+	python -m virtualenv ./venv
+	./venv/bin/python -m pip install --upgrade pip
+	./venv/bin/python -m pip install -r requirements.txt
+
