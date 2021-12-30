@@ -168,17 +168,17 @@ def v0_status() -> ResponseReturnValue:
 	remoteAddr = get_remote_addr()
 	apiKey = get_request_value('apiKey', None)
 
-	with oil.open() as db:
-		limiter = get_limiter(db, remoteAddr, apiKey)
-		retryAfterResponse = limiter.retryAfterResponse(db, .1)
-		if retryAfterResponse is not None:
-			return retryAfterResponse
+	db = oil.open()
+	limiter = get_limiter(db, remoteAddr, apiKey)
+	retryAfterResponse = limiter.retryAfterResponse(db, .1)
+	if retryAfterResponse is not None:
+		return retryAfterResponse
 
-		limiter = limiter.refresh(db)
-		return make_response({'err':0,'status':'ok',
-				'pid':os.getpid(),'tident':threading.get_ident(),
-				'burst':int(math.floor(limiter.burst())),
-				'flow':limiter.flow,'anon':limiter.isAnon()})
+	limiter = limiter.refresh(db)
+	return make_response({'err':0,'status':'ok',
+			'pid':os.getpid(),'tident':threading.get_ident(),
+			'burst':int(math.floor(limiter.burst())),
+			'flow':limiter.flow,'anon':limiter.isAnon()})
 
 @app.route('/v0/remote', methods=['GET'])
 def v0_remote() -> ResponseReturnValue:
@@ -194,21 +194,22 @@ def v0_ffn_crawl() -> ResponseReturnValue:
 		q = q[:4096]
 	print(f'v0_ffn_crawl: {q=}')
 
-	with oil.open() as db:
-		limiter = get_limiter(db, remoteAddr, apiKey)
-		WeaverRequestLog.log(db, limiter.id, q)
 
-		if limiter.isAnon():
-			glimiter = WeaverLimiter.select(db, 'global_anon')
-			if glimiter is None:
-				return make_response({'err':-5,'msg':'no global limiter'}, 500)
-			retryAfterResponse = glimiter.retryAfterResponse(db, 1)
-			if retryAfterResponse is not None:
-				return retryAfterResponse
+	db = oil.open()
+	limiter = get_limiter(db, remoteAddr, apiKey)
+	WeaverRequestLog.log(db, limiter.id, q)
 
-		retryAfterResponse = limiter.retryAfterResponse(db, 1)
+	if limiter.isAnon():
+		glimiter = WeaverLimiter.select(db, 'global_anon')
+		if glimiter is None:
+			return make_response({'err':-5,'msg':'no global limiter'}, 500)
+		retryAfterResponse = glimiter.retryAfterResponse(db, 1)
 		if retryAfterResponse is not None:
 			return retryAfterResponse
+
+	retryAfterResponse = limiter.retryAfterResponse(db, 1)
+	if retryAfterResponse is not None:
+		return retryAfterResponse
 
 	if (q is None or len(q.strip()) < 1):
 		return make_response({'err':-1,'msg':'missing q param'}, 400)
