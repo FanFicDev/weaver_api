@@ -315,6 +315,53 @@ def v0_crawl_internal(
 def v0_crawl() -> ResponseReturnValue:
 	return v0_any_crawl()
 
+def v0_cache_internal() -> Optional[ResponseReturnValue]:
+	try:
+		global defaultRequestTimeout, defaultUserAgent
+		global skitterBaseUrl, skitterApiKey, skitterUser
+
+		q = get_request_value('q', None)
+		if q is not None and len(q) > 4096:
+			q = q[:4096]
+		print(f'v0_cache_internal: {q=}')
+
+		cookies: Dict[str, str] = {}
+		headers = { 'User-Agent': defaultUserAgent }
+		url = urllib.parse.urljoin(skitterBaseUrl, 'v0/cache')
+
+		r = requests.get(url, headers=headers, cookies=cookies,
+				params={'q': q}, data={'apiKey': skitterApiKey}, auth=skitterUser,
+				timeout=defaultRequestTimeout)
+		if r.status_code == 404:
+			return None
+		if r.status_code != 200:
+			raise Exception(f'v0_cache_internal: response {r.status_code} != 200')
+
+		fres = make_response(r.content)
+		for rh in r.headers:
+			if rh.startswith('X-Weaver'):
+				fres.headers[rh] = r.headers[rh]
+		return fres
+	except Exception as e:
+		print(f'v0_cache_internal: exception {q}: {e}\n{traceback.format_exc()}')
+	return make_response({'err':-4,'msg':'no return','arg':q}, 500)
+
+@app.route('/v0/cache', methods=['GET'])
+def v0_cache() -> ResponseReturnValue:
+	remoteAddr = get_remote_addr()
+	apiKey = get_request_value('apiKey', None)
+
+	db = oil.open()
+	limiter = get_limiter(db, remoteAddr, apiKey)
+	retryAfterResponse = limiter.retryAfterResponse(db, .1)
+	if retryAfterResponse is not None:
+		return retryAfterResponse
+
+	res = v0_cache_internal()
+	if res is not None:
+		return res
+	return make_response({'err':-404,'msg':'not found'}, 404)
+
 if __name__ == '__main__':
 	app.run(debug=True)
 
