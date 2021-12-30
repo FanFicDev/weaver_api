@@ -196,6 +196,28 @@ def v0_ffn_crawl() -> ResponseReturnValue:
 		['https://www.fanfiction.net/', 'https://m.fanfiction.net/']
 	)
 
+@app.route('/v0/fp/crawl', methods=['GET'])
+def v0_fp_crawl() -> ResponseReturnValue:
+	return v0_crawl_internal(
+		[
+			('http://', 'https://'),
+			('https://fictionpress.com/', 'https://www.fictionpress.com/'),
+		],
+		['https://www.fictionpress.com/', 'https://m.fictionpress.com/']
+	)
+
+@app.route('/v0/rr/crawl', methods=['GET'])
+def v0_rr_crawl() -> ResponseReturnValue:
+	return v0_crawl_internal(
+		[
+			('http://', 'https://'),
+			('https://royalroadl.com/', 'https://www.royalroad.com/'),
+			('https://www.royalroadl.com/', 'https://www.royalroad.com/'),
+			('https://royalroad.com/', 'https://www.royalroad.com/'),
+		],
+		['https://www.royalroad.com/']
+	)
+
 def v0_crawl_internal(
 	prefixMunges: List[Tuple[str, str]], validPrefixes: List[str]
 ) -> ResponseReturnValue:
