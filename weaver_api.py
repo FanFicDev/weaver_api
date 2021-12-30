@@ -1,6 +1,6 @@
 from typing import (
 		Any, Dict, Union, Tuple, Optional, Generator, List,
-		Callable, Iterable
+		Callable, Iterable, Set
 	)
 import os
 import threading
@@ -23,7 +23,7 @@ app = Flask(__name__, static_url_path='')
 defaultRequestTimeout = 60
 defaultUserAgent = 'weaver_api'
 skitterBaseUrl = 'https://atem.fanfic.dev/skitter/'
-TRUSTED_UPSTREAMS={}
+TRUSTED_UPSTREAMS: Set[str] = set()
 
 import priv
 skitterApiKey = priv.skitterApiKey
