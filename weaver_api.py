@@ -187,18 +187,32 @@ def v0_remote() -> ResponseReturnValue:
 
 @app.route('/v0/ffn/crawl', methods=['GET'])
 def v0_ffn_crawl() -> ResponseReturnValue:
+	return v0_crawl_internal(
+		[
+			('http://', 'https://'),
+			('https://fanfiction.net/', 'https://www.fanficton.net/'),
+			#('https://m.fanfiction.net/', 'https://www.fanficton.net/'),
+		],
+		['https://www.fanfiction.net/', 'https://m.fanfiction.net/']
+	)
+
+def v0_crawl_internal(
+	prefixMunges: List[Tuple[str, str]], validPrefixes: List[str]
+) -> ResponseReturnValue:
 	remoteAddr = get_remote_addr()
 	apiKey = get_request_value('apiKey', None)
 
 	q = get_request_value('q', None)
 	if q is not None and len(q) > 4096:
 		q = q[:4096]
-	print(f'v0_ffn_crawl: {q=}')
+	print(f'v0_crawl_internal: {q=}')
 
 	if DISABLE_CRAWLING:
-		print(f'v0_ffn_crawl: temporarily disabled, 503')
+		print(f'v0_crawl_internal: temporarily disabled, 503')
 		retryAfter=300
-		res = make_response({'err':-503,'msg':'service unavailable','retryAfter':retryAfter}, 503)
+		res = make_response({
+			'err':-503,'msg':'service unavailable','retryAfter':retryAfter
+		}, 503)
 		res.headers['Retry-After'] = retryAfter
 		return res
 
@@ -221,18 +235,17 @@ def v0_ffn_crawl() -> ResponseReturnValue:
 	if (q is None or len(q.strip()) < 1):
 		return make_response({'err':-1,'msg':'missing q param'}, 400)
 
-	prefixMunge = [
-			('http://', 'https://'),
-			('https://fanfiction.net/', 'https://www.fanficton.net/'),
-			#('https://m.fanfiction.net/', 'https://www.fanficton.net/'),
-		]
-	for munge in prefixMunge:
+	for munge in prefixMunges:
 		if q.startswith(munge[0]):
 			q = munge[1] + q[len(munge[0]):]
 
-	if not q.startswith('https://www.fanfiction.net/') \
-			and not q.startswith('https://m.fanfiction.net/'):
-		return make_response({'err':-2,'msg':'url is not ffn','arg':q}, 400)
+	validPrefix = False
+	for pre in validPrefixes:
+		if q.startswith(pre):
+			validPrefix = True
+			break
+	if not validPrefixes:
+		return make_response({'err':-2,'msg':'url is invalid','arg':q}, 400)
 
 	try:
 		global defaultRequestTimeout, defaultUserAgent
@@ -254,7 +267,7 @@ def v0_ffn_crawl() -> ResponseReturnValue:
 				fres.headers[rh] = r.headers[rh]
 		return fres
 	except Exception as e:
-		print(f'v0_ffn_crawl: exception {q}: {e}\n{traceback.format_exc()}')
+		print(f'v0_crawl_internal: exception {q}: {e}\n{traceback.format_exc()}')
 
 	return make_response({'err':-4,'msg':'no return','arg':q}, 500)
 
