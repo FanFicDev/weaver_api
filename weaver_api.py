@@ -22,14 +22,15 @@ from oil import oil
 app = Flask(__name__, static_url_path='')
 defaultRequestTimeout = 60
 defaultUserAgent = 'weaver_api'
-skitterBaseUrl = 'https://atlas.fanfic.dev/skitter/'
-TRUSTED_UPSTREAMS={'157.90.146.42'}
+skitterBaseUrl = 'https://atem.fanfic.dev/skitter/'
+TRUSTED_UPSTREAMS={}
 
 import priv
 skitterApiKey = priv.skitterApiKey
 skitterUser = priv.skitterUser
 
 CACHE_BUSTER=1
+DISABLE_CRAWLING=False
 
 class WeaverLimiter:
 	def __init__(self, id_: int, key_: str, capacity_: float, flow_: float,
@@ -194,6 +195,12 @@ def v0_ffn_crawl() -> ResponseReturnValue:
 		q = q[:4096]
 	print(f'v0_ffn_crawl: {q=}')
 
+	if DISABLE_CRAWLING:
+		print(f'v0_ffn_crawl: temporarily disabled, 503')
+		retryAfter=300
+		res = make_response({'err':-503,'msg':'service unavailable','retryAfter':retryAfter}, 503)
+		res.headers['Retry-After'] = retryAfter
+		return res
 
 	db = oil.open()
 	limiter = get_limiter(db, remoteAddr, apiKey)
