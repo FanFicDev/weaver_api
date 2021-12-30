@@ -311,6 +311,10 @@ def v0_crawl_internal(
 
 	return make_response({'err':-4,'msg':'no return','arg':q}, 500)
 
+@app.route('/v0/crawl', methods=['GET'])
+def v0_crawl() -> ResponseReturnValue:
+	return v0_any_crawl()
+
 if __name__ == '__main__':
 	app.run(debug=True)
 
